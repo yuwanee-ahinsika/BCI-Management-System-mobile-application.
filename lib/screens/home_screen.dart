@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/data_provider.dart';
 import '../theme/app_theme.dart';
-import 'students/student_list_screen.dart';
+import '../widgets/section_header.dart';
 import 'courses/course_list_screen.dart';
 import 'enrollment/enrollment_screen.dart';
+import 'students/student_list_screen.dart';
 
 /// Main screen with premium bottom navigation.
 class HomeScreen extends StatefulWidget {
@@ -335,7 +337,7 @@ class DashboardView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionTitle(title: 'Quick Actions'),
+                    const SectionHeader(title: 'Quick Actions'),
                     const SizedBox(height: 14),
                     Row(
                       children: [
@@ -386,7 +388,7 @@ class DashboardView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SectionTitle(title: 'Recent Students'),
+                      const SectionHeader(title: 'Recent Students'),
                       const SizedBox(height: 14),
                       ...dp.students.reversed
                           .take(4)
@@ -404,7 +406,10 @@ class DashboardView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SectionTitle(title: 'Available Courses'),
+                      const SectionHeader(
+                        title: 'Available Courses',
+                        gradient: AppTheme.greenGradient,
+                      ),
                       const SizedBox(height: 14),
                       ...dp.courses.take(4).map((c) {
                         final enrolled = dp.getEnrolledStudents(c.id).length;
@@ -426,37 +431,6 @@ class DashboardView extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════
 //  DASHBOARD WIDGETS
 // ═══════════════════════════════════════════════════════════
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 20,
-          decoration: BoxDecoration(
-            gradient: AppTheme.accentGradient,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _HeroStat extends StatelessWidget {
   final String value;

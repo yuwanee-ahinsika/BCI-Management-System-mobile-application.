@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import 'providers/data_provider.dart';
-import 'theme/app_theme.dart';
+import 'repositories/implementations/in_memory_course_repository.dart';
+import 'repositories/implementations/in_memory_enrollment_repository.dart';
+import 'repositories/implementations/in_memory_student_repository.dart';
+import 'screens/courses/course_form_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/students/student_form_screen.dart';
-import 'screens/courses/course_form_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,8 +32,18 @@ class BCIManagementApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ─── Dependency Inversion Principle (DIP) Composition Root ───
+    // Instantiate concrete repository implementations
+    final studentRepo = InMemoryStudentRepository();
+    final courseRepo = InMemoryCourseRepository();
+    final enrollmentRepo = InMemoryEnrollmentRepository(studentRepository: studentRepo);
+
     return ChangeNotifierProvider(
-      create: (_) => DataProvider()..loadSampleData(),
+      create: (_) => DataProvider(
+        studentRepo: studentRepo,
+        courseRepo: courseRepo,
+        enrollmentRepo: enrollmentRepo,
+      )..loadSampleData(),
       child: MaterialApp(
         title: 'BCI Campus Management System',
         debugShowCheckedModeBanner: false,

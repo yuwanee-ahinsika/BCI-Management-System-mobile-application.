@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/data_provider.dart';
 import '../../theme/app_theme.dart';
-import 'student_form_screen.dart';
+import '../../widgets/confirm_delete_dialog.dart';
+import '../../widgets/custom_search_bar.dart';
+import '../../widgets/empty_state_view.dart';
 import 'student_detail_screen.dart';
+import 'student_form_screen.dart';
 
-/// Premium student list with search and animated cards.
+/// Student list screen utilizing modular widgets (SRP / SOLID).
 class StudentListScreen extends StatefulWidget {
   const StudentListScreen({super.key});
 
@@ -37,7 +41,8 @@ class _StudentListScreenState extends State<StudentListScreen> {
               // ─── Header ───
               SliverToBoxAdapter(
                 child: Container(
-                  decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+                  decoration:
+                      const BoxDecoration(gradient: AppTheme.primaryGradient),
                   child: SafeArea(
                     bottom: false,
                     child: Padding(
@@ -86,51 +91,15 @@ class _StudentListScreenState extends State<StudentListScreen> {
                             ],
                           ),
                           const SizedBox(height: 18),
-                          // Search
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(10),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (v) =>
-                                  setState(() => _searchQuery = v),
-                              style: const TextStyle(
-                                  color: AppTheme.textPrimary, fontSize: 14),
-                              decoration: InputDecoration(
-                                hintText: 'Search by name, ID or email...',
-                                hintStyle: const TextStyle(
-                                    color: AppTheme.textHint, fontSize: 14),
-                                prefixIcon: const Icon(Icons.search_rounded,
-                                    color: AppTheme.textHint, size: 22),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.close_rounded,
-                                            color: AppTheme.textHint, size: 20),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          setState(() => _searchQuery = '');
-                                        },
-                                      )
-                                    : null,
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
-                              ),
-                            ),
+                          // Reusable Custom Search Bar
+                          CustomSearchBar(
+                            controller: _searchController,
+                            hintText: 'Search by name, ID or email...',
+                            onChanged: (v) => setState(() => _searchQuery = v),
+                            onClear: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
                           ),
                         ],
                       ),
@@ -153,10 +122,10 @@ class _StudentListScreenState extends State<StudentListScreen> {
                 ),
               ),
 
-              // ─── List / Empty ───
+              // ─── List / Empty View ───
               if (students.isEmpty)
                 SliverFillRemaining(
-                  child: _EmptyState(
+                  child: EmptyStateView(
                     icon: _searchQuery.isNotEmpty
                         ? Icons.search_off_rounded
                         : Icons.people_outline_rounded,
@@ -188,8 +157,20 @@ class _StudentListScreenState extends State<StudentListScreen> {
                               MaterialPageRoute(
                                   builder: (_) =>
                                       StudentFormScreen(studentId: s.id))),
-                          onDelete: () =>
-                              _confirmDelete(context, dp, s),
+                          onDelete: () => ConfirmDeleteDialog.show(
+                            context,
+                            title: 'Delete Student',
+                            content:
+                                'Delete "${s.name}"? This cannot be undone.',
+                            onConfirm: () {
+                              dp.deleteStudent(s.id);
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text('${s.name} deleted'),
+                                backgroundColor: AppTheme.error,
+                              ));
+                            },
+                          ),
                         ),
                       );
                     },
@@ -210,44 +191,14 @@ class _StudentListScreenState extends State<StudentListScreen> {
       },
     );
   }
-
-  void _confirmDelete(BuildContext context, DataProvider dp, dynamic s) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Student'),
-        content: Text('Delete "${s.name}"? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              dp.deleteStudent(s.id);
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('${s.name} deleted'),
-                backgroundColor: AppTheme.error,
-              ));
-            },
-            child:
-                const Text('Delete', style: TextStyle(color: AppTheme.error)),
-          ),
-        ],
-      ),
-    );
-  }
 }
-
-// ═══════════════════════════════════════════════════════════
 
 class _StudentCard extends StatelessWidget {
   final dynamic student;
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
   const _StudentCard({
     required this.student,
     required this.onTap,
@@ -345,9 +296,8 @@ class _StudentCard extends StatelessWidget {
                   child: Text(
                     '$enrolled courses',
                     style: TextStyle(
-                      color: enrolled > 0
-                          ? AppTheme.success
-                          : AppTheme.textHint,
+                      color:
+                          enrolled > 0 ? AppTheme.success : AppTheme.textHint,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -381,6 +331,7 @@ class _IconBtn extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+
   const _IconBtn(
       {required this.icon, required this.color, required this.onTap});
 
@@ -395,43 +346,6 @@ class _IconBtn extends StatelessWidget {
           padding: const EdgeInsets.all(6),
           child: Icon(icon, size: 19, color: color),
         ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  const _EmptyState(
-      {required this.icon, required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceLight,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: AppTheme.textHint, size: 48),
-          ),
-          const SizedBox(height: 20),
-          Text(title,
-              style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text(subtitle,
-              style:
-                  const TextStyle(color: AppTheme.textHint, fontSize: 13.5)),
-        ],
       ),
     );
   }

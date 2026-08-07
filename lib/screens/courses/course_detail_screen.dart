@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/data_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/confirm_delete_dialog.dart';
+import '../../widgets/section_header.dart';
 import 'course_form_screen.dart';
 
 /// Premium course detail screen.
@@ -89,8 +92,16 @@ class CourseDetailScreen extends StatelessWidget {
                                         color: Colors.white,
                                         size: 16),
                                   ),
-                                  onPressed: () =>
-                                      _confirmDelete(context, dp),
+                                  onPressed: () => ConfirmDeleteDialog.show(
+                                    context,
+                                    title: 'Delete Course',
+                                    content:
+                                        'This removes all enrollments too.',
+                                    onConfirm: () {
+                                      dp.deleteCourse(courseId);
+                                      Navigator.pop(context);
+                                    },
+                                  ),
                                 ),
                               ]),
                             ],
@@ -190,25 +201,10 @@ class CourseDetailScreen extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                  child: Row(children: [
-                    Container(
-                      width: 4,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.accentGradient,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Enrolled Students (${students.length})',
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ]),
+                  child: SectionHeader(
+                    title: 'Enrolled Students (${students.length})',
+                    gradient: AppTheme.accentGradient,
+                  ),
                 ),
               ),
 
@@ -318,38 +314,13 @@ class CourseDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Divider(color: AppTheme.dividerColor.withAlpha(120)),
       );
-
-  void _confirmDelete(BuildContext context, DataProvider dp) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Course'),
-        content: const Text('This removes all enrollments too.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              dp.deleteCourse(courseId);
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child:
-                const Text('Delete', style: TextStyle(color: AppTheme.error)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+
   const _InfoRow(
       {required this.icon, required this.label, required this.value});
 

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/data_provider.dart';
 import '../../theme/app_theme.dart';
-import 'course_form_screen.dart';
+import '../../widgets/confirm_delete_dialog.dart';
+import '../../widgets/custom_search_bar.dart';
+import '../../widgets/empty_state_view.dart';
 import 'course_detail_screen.dart';
+import 'course_form_screen.dart';
 
-/// Premium course list with search and animated cards.
+/// Course list screen utilizing modular widgets (SRP / SOLID).
 class CourseListScreen extends StatefulWidget {
   const CourseListScreen({super.key});
 
@@ -91,50 +95,15 @@ class _CourseListScreenState extends State<CourseListScreen> {
                             ],
                           ),
                           const SizedBox(height: 18),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withAlpha(10),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (v) =>
-                                  setState(() => _searchQuery = v),
-                              style: const TextStyle(
-                                  color: AppTheme.textPrimary, fontSize: 14),
-                              decoration: InputDecoration(
-                                hintText: 'Search by name, code or lecturer...',
-                                hintStyle: const TextStyle(
-                                    color: AppTheme.textHint, fontSize: 14),
-                                prefixIcon: const Icon(Icons.search_rounded,
-                                    color: AppTheme.textHint, size: 22),
-                                suffixIcon: _searchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.close_rounded,
-                                            color: AppTheme.textHint, size: 20),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          setState(() => _searchQuery = '');
-                                        },
-                                      )
-                                    : null,
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
-                              ),
-                            ),
+                          // Reusable Custom Search Bar
+                          CustomSearchBar(
+                            controller: _searchController,
+                            hintText: 'Search by name, code or lecturer...',
+                            onChanged: (v) => setState(() => _searchQuery = v),
+                            onClear: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
                           ),
                         ],
                       ),
@@ -158,44 +127,16 @@ class _CourseListScreenState extends State<CourseListScreen> {
 
               if (courses.isEmpty)
                 SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.surfaceLight,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _searchQuery.isNotEmpty
-                                ? Icons.search_off_rounded
-                                : Icons.auto_stories_outlined,
-                            color: AppTheme.textHint,
-                            size: 48,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'No results found'
-                              : 'No courses yet',
-                          style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _searchQuery.isNotEmpty
-                              ? 'Try a different search term'
-                              : 'Tap + to add your first course',
-                          style: const TextStyle(
-                              color: AppTheme.textHint, fontSize: 13.5),
-                        ),
-                      ],
-                    ),
+                  child: EmptyStateView(
+                    icon: _searchQuery.isNotEmpty
+                        ? Icons.search_off_rounded
+                        : Icons.auto_stories_outlined,
+                    title: _searchQuery.isNotEmpty
+                        ? 'No results found'
+                        : 'No courses yet',
+                    subtitle: _searchQuery.isNotEmpty
+                        ? 'Try a different search term'
+                        : 'Tap + to add your first course',
                   ),
                 )
               else
@@ -220,7 +161,20 @@ class _CourseListScreenState extends State<CourseListScreen> {
                               MaterialPageRoute(
                                   builder: (_) =>
                                       CourseFormScreen(courseId: c.id))),
-                          onDelete: () => _confirmDelete(context, dp, c),
+                          onDelete: () => ConfirmDeleteDialog.show(
+                            context,
+                            title: 'Delete Course',
+                            content:
+                                'Delete "${c.courseName}"? This removes all enrollments too.',
+                            onConfirm: () {
+                              dp.deleteCourse(c.id);
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                content: Text('${c.courseName} deleted'),
+                                backgroundColor: AppTheme.error,
+                              ));
+                            },
+                          ),
                         ),
                       );
                     },
@@ -242,36 +196,6 @@ class _CourseListScreenState extends State<CourseListScreen> {
       },
     );
   }
-
-  void _confirmDelete(BuildContext context, DataProvider dp, dynamic c) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Course'),
-        content: Text(
-            'Delete "${c.courseName}"? This removes all enrollments too.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              dp.deleteCourse(c.id);
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('${c.courseName} deleted'),
-                backgroundColor: AppTheme.error,
-              ));
-            },
-            child:
-                const Text('Delete', style: TextStyle(color: AppTheme.error)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _CourseCard extends StatelessWidget {
@@ -280,6 +204,7 @@ class _CourseCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
   const _CourseCard({
     required this.course,
     required this.enrolledCount,
@@ -404,6 +329,7 @@ class _ActionBtn extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+
   const _ActionBtn(
       {required this.icon, required this.color, required this.onTap});
 

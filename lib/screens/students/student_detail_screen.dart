@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../providers/data_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/confirm_delete_dialog.dart';
+import '../../widgets/section_header.dart';
 import 'student_form_screen.dart';
 
 /// Premium student detail screen with profile-style layout.
@@ -30,7 +33,8 @@ class StudentDetailScreen extends StatelessWidget {
               // ─── Profile Header ───
               SliverToBoxAdapter(
                 child: Container(
-                  decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+                  decoration:
+                      const BoxDecoration(gradient: AppTheme.primaryGradient),
                   child: SafeArea(
                     bottom: false,
                     child: Column(
@@ -48,8 +52,10 @@ class StudentDetailScreen extends StatelessWidget {
                                     color: Colors.white.withAlpha(20),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Icon(Icons.arrow_back_ios_new_rounded,
-                                      color: Colors.white, size: 16),
+                                  child: const Icon(
+                                      Icons.arrow_back_ios_new_rounded,
+                                      color: Colors.white,
+                                      size: 16),
                                 ),
                                 onPressed: () => Navigator.pop(context),
                               ),
@@ -78,10 +84,21 @@ class StudentDetailScreen extends StatelessWidget {
                                         color: AppTheme.error.withAlpha(40),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
-                                      child: const Icon(Icons.delete_outline_rounded,
-                                          color: Colors.white, size: 16),
+                                      child: const Icon(
+                                          Icons.delete_outline_rounded,
+                                          color: Colors.white,
+                                          size: 16),
                                     ),
-                                    onPressed: () => _confirmDelete(context, dp),
+                                    onPressed: () => ConfirmDeleteDialog.show(
+                                      context,
+                                      title: 'Delete Student',
+                                      content:
+                                          'Are you sure you want to delete this student? This action cannot be undone.',
+                                      onConfirm: () {
+                                        dp.deleteStudent(studentId);
+                                        Navigator.pop(context);
+                                      },
+                                    ),
                                   ),
                                 ],
                               ),
@@ -100,7 +117,8 @@ class StudentDetailScreen extends StatelessWidget {
                                   color: Colors.white.withAlpha(20),
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                      color: Colors.white.withAlpha(30), width: 2),
+                                      color: Colors.white.withAlpha(30),
+                                      width: 2),
                                 ),
                                 child: Center(
                                   child: Text(
@@ -192,26 +210,9 @@ class StudentDetailScreen extends StatelessWidget {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          gradient: AppTheme.greenGradient,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Enrolled Courses (${courses.length})',
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  child: SectionHeader(
+                    title: 'Enrolled Courses (${courses.length})',
+                    gradient: AppTheme.greenGradient,
                   ),
                 ),
               ),
@@ -282,7 +283,8 @@ class StudentDetailScreen extends StatelessWidget {
                                 color: Colors.transparent,
                                 child: InkWell(
                                   onTap: () {
-                                    dp.unenrollStudentFromCourse(studentId, c.id);
+                                    dp.unenrollStudentFromCourse(
+                                        studentId, c.id);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                             content: Text(
@@ -319,37 +321,13 @@ class StudentDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Divider(color: AppTheme.dividerColor.withAlpha(120)),
       );
-
-  void _confirmDelete(BuildContext context, DataProvider dp) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Student'),
-        content: const Text('This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppTheme.textSecondary)),
-          ),
-          TextButton(
-            onPressed: () {
-              dp.deleteStudent(studentId);
-              Navigator.pop(ctx);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: AppTheme.error)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+
   const _InfoRow(
       {required this.icon, required this.label, required this.value});
 
